@@ -4,8 +4,6 @@
 
 # COMMAND ----------
 
-import os
-
 from pyspark.sql.types import FloatType
 from pyspark.sql.types import StructField
 from pyspark.sql.types import StructType

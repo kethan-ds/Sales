@@ -1,5 +1,4 @@
 # Databricks notebook source
-# Databricks notebook source
 
 # COMMAND ----------
 
@@ -26,11 +25,7 @@ spark.conf.set('spark.sql.session.timeZone', 'UTC')
 # params
 dbutils.widgets.text('SOURCE_REST_SERVICE_API_PATH', '/inventories/export')
 dbutils.widgets.text('SOURCE_REST_SERVICE_URL', 'https://businesses-asp.dev.client360.td.com/c360-business-service')
-# NOTE: prefix stripped relative to the legacy ADLS-container-relative path
-# ('data/fixed_income/raw/desks/') since VOLUME_BASE_PATH already resolves to
-# the volume's bound storage root - confirm the exact destination subpath
-# once the volume's storage_location is verified.
-dbutils.widgets.text('ADLS_DESTINATION_PATH', 'fixed_income/desks/')
+dbutils.widgets.text('VOLUME_RELATIVE_PATH', 'fixed_income/inventories')
 dbutils.widgets.text('ADB_AUTH_CLIENT_ID', 'delta_lake_loader_client_id')
 dbutils.widgets.text('ADB_AUTH_CLIENT_SECRET', 'delta_lake_loader_client_secret')
 dbutils.widgets.text('CATALOG', '')
@@ -39,7 +34,7 @@ dbutils.widgets.text('CATALOG', '')
 
 SOURCE_REST_SERVICE_API_PATH = dbutils.widgets.get('SOURCE_REST_SERVICE_API_PATH')
 SOURCE_REST_SERVICE_URL = dbutils.widgets.get('SOURCE_REST_SERVICE_URL')
-ADLS_DESTINATION_PATH = dbutils.widgets.get('ADLS_DESTINATION_PATH')
+VOLUME_RELATIVE_PATH = dbutils.widgets.get('VOLUME_RELATIVE_PATH').strip('/')
 
 ADB_SECRET_CLIENT_ID_NAME = dbutils.widgets.get('ADB_AUTH_CLIENT_ID')
 ADB_SECRET_CLIENT_SECRET_NAME = dbutils.widgets.get('ADB_AUTH_CLIENT_SECRET')
@@ -57,10 +52,8 @@ SOURCE_REST_API_QUERY_PARAMETERS = {}
 
 # COMMAND ----------
 
-# CATALOG_NAME must be set (via os.environ) before %run "./volume_util.py" executes,
-# since volume_util.py reads it at module-load time.
 CATALOG_NAME = dbutils.widgets.get('CATALOG')
-os.environ["CATALOG_NAME"] = CATALOG_NAME
+spark.sql(f"USE CATALOG `{CATALOG_NAME}`")
 
 # COMMAND ----------
 
@@ -73,9 +66,7 @@ os.environ["CATALOG_NAME"] = CATALOG_NAME
 
 # COMMAND ----------
 
-# UC does not grant direct storage access - land the file inside the governed
-# Volume instead of writing to ADLS directly via a storage service principal.
-target_dir = f"{VOLUME_BASE_PATH}/{ADLS_DESTINATION_PATH.rstrip('/')}"
+target_dir = f"{VOLUME_BASE_PATH}/{VOLUME_RELATIVE_PATH}"
 dbutils.fs.mkdirs(target_dir)
 
 # COMMAND ----------

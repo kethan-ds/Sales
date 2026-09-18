@@ -1,7 +1,4 @@
 # Databricks notebook source
-import os
-
-# UC catalog must be known before volume_util resolves the Volume path.
 dbutils.widgets.text("CATALOG", "")
 CATALOG_NAME = dbutils.widgets.get("CATALOG")
 spark.sql(f"USE CATALOG `{CATALOG_NAME}`")
@@ -91,8 +88,6 @@ day = trade_date.day
 data_set_type = "trades"
 data_set_source = "client_value_service"
 
-# VOLUME_BASE_PATH represents the legacy data/raw root.  Keep the existing
-# year/month folder layout so the Bronze notebook can consume the same files.
 target_dir = (
     f"{VOLUME_BASE_PATH}/trades/fixed_income/{data_set_source}/"
     f"{TRADE_SYSTEM}/{year}/{month}"

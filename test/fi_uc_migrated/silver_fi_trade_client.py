@@ -4,23 +4,19 @@
 
 # COMMAND ----------
 
-import os
-
 dbutils.widgets.text("CATALOG", "")
 CATALOG_NAME = dbutils.widgets.get("CATALOG")
 spark.sql(f"USE CATALOG `{CATALOG_NAME}`")
 
-# Keep source/target env overrides for notebook reuse, but make every table a
-# fully-qualified Unity Catalog three-level identifier.
-SOURCE_SCHEMA_NAME = os.getenv('SOURCE_SCHEMA_NAME', 'silver')
-SOURCE_TABLE_NAME = os.getenv('SOURCE_TABLE_NAME', 'fi_trades')
-TARGET_SCHEMA_NAME = os.getenv('TARGET_SCHEMA_NAME', 'silver')
-TARGET_TABLE_NAME = os.getenv('TARGET_TABLE_NAME', 'fi_trades_clients')
+SILVER_FI_TRADES_TABLE = f"`{CATALOG_NAME}`.`silver`.`fi_trades`"
+SILVER_FI_TRADES_CLIENTS_TABLE = f"`{CATALOG_NAME}`.`silver`.`fi_trades_clients`"
+SILVER_CLIENTS_VIEW = f"`{CATALOG_NAME}`.`silver`.`clients`"
+SILVER_FI_TRADES_DISPLAY_VIEW = f"`{CATALOG_NAME}`.`silver`.`fi_trades_display_view`"
 
-source = f"`{CATALOG_NAME}`.`{SOURCE_SCHEMA_NAME}`.`{SOURCE_TABLE_NAME}`"
-target = f"`{CATALOG_NAME}`.`{TARGET_SCHEMA_NAME}`.`{TARGET_TABLE_NAME}`"
-clients_view = f"`{CATALOG_NAME}`.`silver`.`clients`"
-display_view = f"`{CATALOG_NAME}`.`silver`.`fi_trades_display_view`"
+source = SILVER_FI_TRADES_TABLE
+target = SILVER_FI_TRADES_CLIENTS_TABLE
+clients_view = SILVER_CLIENTS_VIEW
+display_view = SILVER_FI_TRADES_DISPLAY_VIEW
 
 # COMMAND ----------
 

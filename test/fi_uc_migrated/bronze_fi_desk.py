@@ -1,8 +1,4 @@
 # Databricks notebook source
-import os
-
-# COMMAND ----------
-
 dbutils.widgets.text("CATALOG", "")
 CATALOG_NAME = dbutils.widgets.get("CATALOG")
 spark.sql(f"USE CATALOG `{CATALOG_NAME}`")
@@ -23,20 +19,10 @@ from pyspark.sql.functions import lit
 
 # COMMAND ----------
 
-# Keep the legacy widget name so existing ADF parameters do not need to change.
-dbutils.widgets.text('ADLS_RAW_DATA_PATH', 'data/raw/fixed_income/desks/')
-ADLS_RAW_DATA_PATH = dbutils.widgets.get('ADLS_RAW_DATA_PATH')
-dbutils.widgets.text('TARGET_SCHEMA_NAME', 'bronze')
-TARGET_SCHEMA_NAME = dbutils.widgets.get('TARGET_SCHEMA_NAME')
+RAW_FI_DESK_VOLUME_PATH = f"{VOLUME_BASE_PATH}/fixed_income/desks"
+BRONZE_FI_DESK_TABLE = f"`{CATALOG_NAME}`.`bronze`.`fi_desk`"
 
 # COMMAND ----------
-
-def to_volume_relative_path(path: str) -> str:
-    value = path.strip().lstrip('/')
-    for prefix in ('data/raw/', 'raw/'):
-        if value.startswith(prefix):
-            return value[len(prefix):].rstrip('/')
-    return value.rstrip('/')
 
 def get_latest_file_from_dir(dir_path: str):
     files = [f for f in dbutils.fs.ls(dir_path) if not f.isDir()]
@@ -46,8 +32,7 @@ def get_latest_file_from_dir(dir_path: str):
 
 # COMMAND ----------
 
-raw_data_folder = f"{VOLUME_BASE_PATH}/{to_volume_relative_path(ADLS_RAW_DATA_PATH)}"
-file = get_latest_file_from_dir(raw_data_folder)
+file = get_latest_file_from_dir(RAW_FI_DESK_VOLUME_PATH)
 path = file.path
 file_name = file.name
 
@@ -82,8 +67,8 @@ df = df.select(expected_columns).withColumn("file_name", lit(file_name))
 
 # COMMAND ----------
 
-# UC managed Bronze table: no LOCATION clause / physical Delta path.
-target_table = f"`{CATALOG_NAME}`.`{TARGET_SCHEMA_NAME}`.`fi_desk`"
+# UC managed Bronze table.
+target_table = BRONZE_FI_DESK_TABLE
 (
     df.write.format("delta")
     .mode("overwrite")

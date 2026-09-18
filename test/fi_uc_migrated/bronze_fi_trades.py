@@ -1,7 +1,5 @@
 # Databricks notebook source
 # Databricks Notebook Source
-import os
-
 dbutils.widgets.text("CATALOG", "")
 CATALOG_NAME = dbutils.widgets.get("CATALOG")
 spark.sql(f"USE CATALOG `{CATALOG_NAME}`")
@@ -30,9 +28,7 @@ from pyspark.sql.types import IntegerType
 from pyspark.sql.types import BooleanType
 from pyspark.sql.types import DateType
 from pyspark.sql.functions import lit
-from pyspark.sql.functions import input_file_name
 from delta.tables import DeltaTable
-import os
 
 # COMMAND ----------
 
@@ -205,29 +201,11 @@ dbutils.widgets.text('TRADE_SYSTEM', '')
 TRADE_SYSTEM = dbutils.widgets.get('TRADE_SYSTEM')
 
 trade_dt = string_to_date(TRADE_DATE)
-raw_trade_dir = (
+trades_filename = f"trades_client_value_service_{TRADE_SYSTEM}_{TRADE_DATE}.csv"
+client_value_service_trades_path = (
     f"{VOLUME_BASE_PATH}/trades/fixed_income/client_value_service/"
-    f"{TRADE_SYSTEM}/{trade_dt.year}/{trade_dt.month}"
+    f"{TRADE_SYSTEM}/{trade_dt.year}/{trade_dt.month}/{trades_filename}"
 )
-
-# The legacy Raw notebook writes single-underscore names, while this legacy
-# Bronze notebook expected a double-underscore variant. Accept both so the UC
-# migration does not depend on that pre-existing filename inconsistency.
-candidate_filenames = [
-    f"trades_client_value_service_{TRADE_SYSTEM}_{TRADE_DATE}.csv",
-    f"trades__client_value_service__{TRADE_SYSTEM}__{TRADE_DATE}.csv",
-]
-
-raw_files = {f.name: f.path for f in dbutils.fs.ls(raw_trade_dir) if not f.isDir()}
-client_value_service_trades_path = next(
-    (raw_files[name] for name in candidate_filenames if name in raw_files),
-    None,
-)
-if client_value_service_trades_path is None:
-    raise FileNotFoundError(
-        f"No FI raw trade file found in {raw_trade_dir}. "
-        f"Expected one of: {candidate_filenames}"
-    )
 
 BRONZE_FI_TRADES_TABLE = f"`{CATALOG_NAME}`.`bronze`.`fi_trades`"
 
@@ -254,7 +232,7 @@ new_bronze_df = spark.read.csv(
 
 # COMMAND ----------
 
-# Create or replace the Bronze table with specified location
+# Create the managed Unity Catalog Bronze table if required
 spark.sql(f"""
     CREATE TABLE IF NOT EXISTS {BRONZE_FI_TRADES_TABLE} (
         securityPrincipalFactor FLOAT,
